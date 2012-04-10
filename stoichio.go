@@ -23,8 +23,9 @@ func main() {
 	irreversible := ParseIrreversible(irreversiblestring)
 	checkSanity(stoichio, irreversible)
 	l := generateLogic(stoichio, irreversible)
-	fmt.Printf("Logic: %s\n", l)
-	m := logic.DefaultMap(l)
+	cnf := logic.CNF(l)
+	s := formatSAT(cnf)
+	fmt.Printf("Logic: %s\nSAT:\n%s\n", l, s)
 }
 
 func checkSanity(stoichio StoichioMatrix, irreversible []bool) {
@@ -134,21 +135,21 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 			reactionname := strconv.Itoa(reactionidx+1)
 			if !irreversible[reactionidx] {
 				if reaction > 0 {
-					metaboliteins.PushOperand(logic.NewLeaf(reactionname+"+"))
-					metaboliteouts.PushOperand(logic.NewLeaf(reactionname+"-"))
+					metaboliteins.PushOperands(logic.NewLeaf(reactionname+"f"))
+					metaboliteouts.PushOperands(logic.NewLeaf(reactionname+"b"))
 				} else if reaction < 0 {
-					metaboliteins.PushOperand(logic.NewLeaf(reactionname+"-"))
-					metaboliteouts.PushOperand(logic.NewLeaf(reactionname+"+"))
+					metaboliteins.PushOperands(logic.NewLeaf(reactionname+"b"))
+					metaboliteouts.PushOperands(logic.NewLeaf(reactionname+"f"))
 				}
 			} else {
 				if reaction > 0 {
-					metaboliteouts.PushOperand(logic.NewLeaf(reactionname))
+					metaboliteins.PushOperands(logic.NewLeaf(reactionname))
 				} else if reaction < 0 {
-					metaboliteins.PushOperand(logic.NewLeaf(reactionname))
+					metaboliteouts.PushOperands(logic.NewLeaf(reactionname))
 				}
 			}
 		}
-		root.PushOperand(logic.NewIff(metaboliteins, metaboliteouts))
+		root.PushOperands(logic.NewOperation(logic.IFF, metaboliteins, metaboliteouts))
 	}
 
 	// Traverse irreversible reactions
@@ -157,13 +158,39 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 			continue
 		}
 		varname := strconv.Itoa(reactionidx+1)
-		in := logic.NewLeaf(varname+"+")
-		out := logic.NewLeaf(varname+"-")
+		in := logic.NewLeaf(varname+"f")
+		out := logic.NewLeaf(varname+"b")
 		reaction := logic.NewLeaf(varname)
-		exclusion := logic.NewNot(logic.NewAnd(in, out))
-		implication := logic.NewIff(reaction, logic.NewOr(in, out))
-		root.PushOperand(exclusion)
-		root.PushOperand(implication)
+		exclusion := logic.NewOperation(logic.NOT, logic.NewOperation(logic.AND, in, out))
+		implication := logic.NewOperation(logic.IFF, reaction, logic.NewOperation(logic.OR, in, out))
+		root.PushOperands(exclusion)
+		root.PushOperands(implication)
 	}
 	return root
+}
+
+
+func formatSAT(n logic.Node) string {
+	s := ""
+	if _, ok := n.(logic.Leaf); ok {
+		return n.String()
+	}
+	x := n.(*logic.Operation)
+	switch x.Operator {
+	case logic.AND:
+		for _, op := range x.Operands {
+			s += formatSAT(op)+"\n"
+		}
+	case logic.OR:
+		sep := ""
+		for _, op := range x.Operands {
+			s += sep+formatSAT(op)
+			sep = " "
+		}
+	case logic.NOT:
+		s = "-" + x.Operands[0].String()
+	default:
+		panic("This is not possibe o_O")
+	}
+	return s
 }
