@@ -127,6 +127,7 @@ func ParseIrreversible(is string) []bool {
 }
 
 func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
+	reversiblemap := map[string]string{}
 	root := logic.NewOperation(logic.AND)
 	for _, metabol := range stoichio {
 		metaboliteins, metaboliteouts := logic.NewOperation(logic.OR), logic.NewOperation(logic.OR)
@@ -134,12 +135,16 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 		for reactionidx, reaction := range metabol {
 			reactionname := strconv.Itoa(reactionidx+1)
 			if !irreversible[reactionidx] {
+				if _, ok := reversiblemap[reactionname+"f"]; !ok {
+					reversiblemap[reactionname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
+					reversiblemap[reactionname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+				}
 				if reaction > 0 {
-					metaboliteins.PushOperands(logic.NewLeaf(reactionname+"f"))
-					metaboliteouts.PushOperands(logic.NewLeaf(reactionname+"b"))
+					metaboliteins.PushOperands(logic.NewLeaf(reversiblemap[reactionname+"f"]))
+					metaboliteouts.PushOperands(logic.NewLeaf(reversiblemap[reactionname+"b"]))
 				} else if reaction < 0 {
-					metaboliteins.PushOperands(logic.NewLeaf(reactionname+"b"))
-					metaboliteouts.PushOperands(logic.NewLeaf(reactionname+"f"))
+					metaboliteins.PushOperands(logic.NewLeaf(reversiblemap[reactionname+"b"]))
+					metaboliteouts.PushOperands(logic.NewLeaf(reversiblemap[reactionname+"f"]))
 				}
 			} else {
 				if reaction > 0 {
@@ -158,8 +163,12 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 			continue
 		}
 		varname := strconv.Itoa(reactionidx+1)
-		in := logic.NewLeaf(varname+"f")
-		out := logic.NewLeaf(varname+"b")
+		if _, ok := reversiblemap[varname+"f"]; !ok {
+			reversiblemap[varname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
+			reversiblemap[varname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+		}
+		in := logic.NewLeaf(reversiblemap[varname+"f"])
+		out := logic.NewLeaf(reversiblemap[varname+"b"])
 		reaction := logic.NewLeaf(varname)
 		exclusion := logic.NewOperation(logic.NOT, logic.NewOperation(logic.AND, in, out))
 		implication := logic.NewOperation(logic.IFF, reaction, logic.NewOperation(logic.OR, in, out))
@@ -179,7 +188,7 @@ func formatSAT(n logic.Node) string {
 	switch x.Operator {
 	case logic.AND:
 		for _, op := range x.Operands {
-			s += formatSAT(op)+"\n"
+			s += formatSAT(op)+" 0 \n"
 		}
 	case logic.OR:
 		sep := ""
