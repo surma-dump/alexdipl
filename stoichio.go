@@ -13,6 +13,7 @@ import (
 
 var (
 	input = flag.String("i", "", "Input to read from.")
+	sat = flag.Bool("s", false, "Produce SAT compatible output")
 )
 
 func main() {
@@ -136,8 +137,13 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 			reactionname := strconv.Itoa(reactionidx+1)
 			if !irreversible[reactionidx] {
 				if _, ok := reversiblemap[reactionname+"f"]; !ok {
-					reversiblemap[reactionname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
-					reversiblemap[reactionname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+					if *sat {
+						reversiblemap[reactionname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
+						reversiblemap[reactionname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+					} else {
+						reversiblemap[reactionname+"f"] = reactionname+"f"
+						reversiblemap[reactionname+"b"] = reactionname+"b"
+					}
 				}
 				if reaction > 0 {
 					metaboliteins.PushOperands(logic.NewLeaf(reversiblemap[reactionname+"f"]))
@@ -164,8 +170,13 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 		}
 		varname := strconv.Itoa(reactionidx+1)
 		if _, ok := reversiblemap[varname+"f"]; !ok {
-			reversiblemap[varname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
-			reversiblemap[varname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+			if *sat {
+				reversiblemap[varname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
+				reversiblemap[varname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+			} else {
+				reversiblemap[varname+"f"] = varname+"f"
+				reversiblemap[varname+"b"] = varname+"b"
+			}
 		}
 		in := logic.NewLeaf(reversiblemap[varname+"f"])
 		out := logic.NewLeaf(reversiblemap[varname+"b"])
