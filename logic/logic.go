@@ -1,10 +1,10 @@
 package logic
 
 const (
-	NOT = "¬"
-	AND = "⋀"
-	OR  = "⋁"
-	IFF = "↔"
+	NOT = "!"
+	AND = "^"
+	OR  = "v"
+	IFF = "<=>"
 )
 
 var (
