@@ -24,9 +24,10 @@ func main() {
 	irreversible := ParseIrreversible(irreversiblestring)
 	checkSanity(stoichio, irreversible)
 	l := generateLogic(stoichio, irreversible)
+	fmt.Printf("Logic:\n%s\n", l)
 	cnf := logic.CNF(l)
 	s := formatSAT(cnf)
-	fmt.Printf("Logic: %s\nSAT:\n%s\n", l, s)
+	fmt.Printf("SAT:\n%s\n", s)
 }
 
 func checkSanity(stoichio StoichioMatrix, irreversible []bool) {
@@ -138,8 +139,9 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 			if !irreversible[reactionidx] {
 				if _, ok := reversiblemap[reactionname+"f"]; !ok {
 					if *sat {
-						reversiblemap[reactionname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
-						reversiblemap[reactionname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+						idx := len(irreversible) + 1 + 2*len(reversiblemap)
+						reversiblemap[reactionname+"f"] = strconv.Itoa(idx)
+						reversiblemap[reactionname+"b"] = strconv.Itoa(idx+1)
 					} else {
 						reversiblemap[reactionname+"f"] = reactionname+"f"
 						reversiblemap[reactionname+"b"] = reactionname+"b"
@@ -171,8 +173,9 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 		varname := strconv.Itoa(reactionidx+1)
 		if _, ok := reversiblemap[varname+"f"]; !ok {
 			if *sat {
-				reversiblemap[varname+"f"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap))
-				reversiblemap[varname+"b"] = strconv.Itoa(len(irreversible) + 2*len(reversiblemap)+1)
+				idx := len(irreversible) + 1 + 2*len(reversiblemap)
+				reversiblemap[varname+"f"] = strconv.Itoa(idx)
+				reversiblemap[varname+"b"] = strconv.Itoa(idx+1)
 			} else {
 				reversiblemap[varname+"f"] = varname+"f"
 				reversiblemap[varname+"b"] = varname+"b"
