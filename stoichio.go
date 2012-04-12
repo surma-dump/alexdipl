@@ -139,7 +139,7 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 			if !irreversible[reactionidx] {
 				if _, ok := reversiblemap[reactionname+"f"]; !ok {
 					if *sat {
-						idx := len(irreversible) + 1 + 2*len(reversiblemap)
+						idx := len(irreversible) + len(reversiblemap) + 1
 						reversiblemap[reactionname+"f"] = strconv.Itoa(idx)
 						reversiblemap[reactionname+"b"] = strconv.Itoa(idx+1)
 					} else {
@@ -173,7 +173,7 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 		varname := strconv.Itoa(reactionidx+1)
 		if _, ok := reversiblemap[varname+"f"]; !ok {
 			if *sat {
-				idx := len(irreversible) + 1 + 2*len(reversiblemap)
+				idx := len(irreversible) + len(reversiblemap) + 1
 				reversiblemap[varname+"f"] = strconv.Itoa(idx)
 				reversiblemap[varname+"b"] = strconv.Itoa(idx+1)
 			} else {
