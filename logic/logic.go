@@ -9,7 +9,7 @@ const (
 	AND = "^"
 	OR  = "v"
 	IFF = "<=>"
-	IF = "=>"
+	IF  = "=>"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 		AND: and,
 		OR:  or,
 		IFF: iff,
-		IF: _if,
+		IF:  _if,
 	}
 )
 
@@ -157,6 +157,7 @@ func iff(operands []Node, config Configuration) bool {
 var (
 	idxmap map[string]int
 )
+
 func FormatSAT(n Node) string {
 	idxmap = make(map[string]int)
 	n = CNF(n)
@@ -168,7 +169,7 @@ func formatSAT(n Node) string {
 	if _, ok := n.(Leaf); ok {
 		name := n.String()
 		if _, ok := idxmap[name]; !ok {
-			idxmap[name] = len(idxmap)+1
+			idxmap[name] = len(idxmap) + 1
 		}
 		return fmt.Sprintf("%d", idxmap[name])
 	}

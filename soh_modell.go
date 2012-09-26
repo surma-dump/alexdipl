@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/surma/goptions"
 	"log"
+	"strconv"
+	"strings"
 )
 
 const METABOL = "m_%d_t=%d"
@@ -16,9 +18,11 @@ const VERSION = "0.1"
 func main() {
 	options := struct {
 		InputFile     string `goptions:"-i, --input, description='File to read', obligatory"`
-		TimeLimit int `goptions:"-t, --time, description='Maximum number of timesteps (default: 10)'"`
+		TimeLimit     int    `goptions:"-t, --time, description='Maximum number of timesteps (default: 10)'"`
+		Targetset     string `goptions:"-z, --targetset, description='Comma-separated list of metabolite indices'"`
+		SAT           bool   `goptions:"-s, --output-sat, description='Output in SAT format instead of human-readable CNF'"`
 		goptions.Help `goptions:"-h, --help, description='Show this help'"`
-	} {
+	}{
 		TimeLimit: 10,
 	}
 
@@ -27,6 +31,14 @@ func main() {
 		log.Printf("Error: %s", err)
 		goptions.PrintHelp()
 		return
+	}
+
+	z := []string{}
+	if len(options.Targetset) > 0 {
+		z = strings.Split(options.Targetset, ",")
+		for i, elem := range z {
+			z[i] = strings.TrimSpace(elem)
+		}
 	}
 
 	matrix, irreversible, err := stoichio.ReadFile(options.InputFile)
@@ -42,17 +54,18 @@ func main() {
 			continue
 		}
 		supp := col.Supp()
-		if col[supp[0]] > 0 || (col[supp[0]] < 0 && !irreversible[i]){
+		if col[supp[0]] > 0 || (col[supp[0]] < 0 && !irreversible[i]) {
 			t_in = append(t_in, i)
 			sourceset = append(sourceset, supp[0])
 		}
-		if col[supp[0]] < 0 || (col[supp[0]] > 0 && !irreversible[i]){
+		if col[supp[0]] < 0 || (col[supp[0]] > 0 && !irreversible[i]) {
 			t_out = append(t_out, i)
 		}
 	}
 	log.Printf("t_in: %#v", t_in)
 	log.Printf("t_out: %#v", t_out)
-	log.Printf("sorceset: %#v", sourceset)
+	log.Printf("sourceset: %#v", sourceset)
+	log.Printf("z: %#v", z)
 
 	a1 := logic.NewOperation(logic.AND)
 	for i := 0; i < matrix.NumRows(); i++ {
@@ -76,18 +89,24 @@ func main() {
 		a4.PushOperands(generateA4(t, matrix))
 		a5.PushOperands(generateA5(t, matrix))
 	}
-	a6.PushOperands(generateA6(options.TimeLimit, matrix)...)
-	log.Printf("A1: %s", a1)
-	log.Printf("A2: %s", a2)
-	log.Printf("A3: %s", a3)
-	log.Printf("A4: %s", a4)
-	log.Printf("A5: %s", a5)
-	log.Printf("A6: %s", a6)
-	a := logic.NewOperation(logic.AND, a1, a2, a3, a4, a5, a6)
-	log.Printf("A: %s", a)
-	log.Printf("CNF(A): %s", logic.CNF(a))
-	log.Printf("SAT(A): %s", logic.FormatSAT(a))
+	a6.PushOperands(generateA6(options.TimeLimit, z)...)
+	a := logic.NewOperation(logic.AND, a1, a2, a3, a4, a5)
+	if len(z) > 0 {
+		a.PushOperands(a6)
+	}
 
+	if options.SAT {
+		fmt.Println(logic.FormatSAT(a))
+	} else {
+		log.Printf("A1:\n%s", a1)
+		log.Printf("A2:\n%s", a2)
+		log.Printf("A3:\n%s", a3)
+		log.Printf("A4:\n%s", a4)
+		log.Printf("A5:\n%s", a5)
+		log.Printf("A6:\n%s", a6)
+		log.Printf("A:\n%s", a)
+		log.Printf("CNF(A):\n%s", logic.CNF(a))
+	}
 
 }
 
@@ -147,9 +166,13 @@ func generateA5(t int, matrix stoichio.Matrix) logic.Node {
 	return m
 }
 
-func generateA6(t int, matrix stoichio.Matrix) []logic.Node {
+func generateA6(t int, targetset []string) []logic.Node {
 	m := make([]logic.Node, 0)
-	for i := 0; i < matrix.NumRows(); i++ {
+	for _, idx := range targetset {
+		i, e := strconv.ParseInt(idx, 10, 64)
+		if e != nil {
+			log.Fatalf("Invalid integer in target set: %s", idx)
+		}
 		m = append(m, logic.NewLeaf(fmt.Sprintf(METABOL, i, t)))
 	}
 	return m
@@ -163,4 +186,3 @@ func contains(a []int, i int) bool {
 	}
 	return false
 }
-
