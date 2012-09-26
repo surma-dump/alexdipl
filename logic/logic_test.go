@@ -66,11 +66,31 @@ func TestIff(t *testing.T) {
 	}
 }
 
+func TestIf(t *testing.T) {
+	l := NewOperation(IF, NewLeaf("a"), NewLeaf("b"))
+	f := func(a, b bool) bool {
+		m := map[string]bool{
+			"a": a,
+			"b": b,
+		}
+		return l.Eval(m) == (!a || b)
+	}
+	if e := quick.Check(f, nil); e != nil {
+		t.Fatalf("%s", e)
+	}
+}
+
 // This is stupid!
 func TestSimplify(t *testing.T) {
 	l := NewOperation(NOT, NewLeaf("a"))
 	r := Simplify(l)
 	if r.String() != "!(a)" {
+		t.Fatalf("Simplify(%s) returned %s", l, r)
+	}
+
+	l = NewOperation(IF, NewOperation(NOT, NewLeaf("a")), NewOperation(OR, NewLeaf("a"), NewLeaf("b")))
+	r = Simplify(l)
+	if r.String() != "v(!(!(a)), v(a, b))" {
 		t.Fatalf("Simplify(%s) returned %s", l, r)
 	}
 

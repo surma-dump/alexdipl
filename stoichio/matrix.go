@@ -36,6 +36,22 @@ func ParseMatrix(ms string) (Matrix, error) {
 	return Matrix(r), nil
 }
 
+func (m Matrix) NumCols() int {
+	return len(m[0])
+}
+
+func (m Matrix) NumRows() int {
+	return len(m)
+}
+
+func (m Matrix) Col(idx int) Vector {
+	r := make([]Cell, len(m))
+	for i := range r {
+		r[i] = m[i][idx]
+	}
+	return Vector(r)
+}
+
 func (m Matrix) String() string {
 	s := "["
 	rowsep := ""

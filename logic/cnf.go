@@ -20,14 +20,24 @@ func Simplify(n Node) Node {
 			return Simplify(x.Operands[0])
 		}
 
+		if x.Operator == IF {
+			op1 := x.Operands[0]
+			op2 := x.Operands[1]
+			if len(x.Operands) > 2 {
+				op2 = Simplify(op2)
+			}
+			// a -> b <=> (!a v b)
+			return NewOperation(OR, NewOperation(NOT, op1), op2)
+		}
+
 		if x.Operator == IFF {
 			op1 := x.Operands[0]
 			op2 := x.Operands[1]
 			if len(x.Operands) > 2 {
 				op2 = Simplify(op2)
 			}
-			// a <-> b <=> (!a v b) ^ (!b v a)
-			return NewOperation(AND, NewOperation(OR, NewOperation(NOT, op1), op2), NewOperation(OR, NewOperation(NOT, op2), op1))
+			// a <-> b <=> (a -> b) ^ (b -> a)
+			return Simplify(NewOperation(AND, NewOperation(IF, op1, op2), NewOperation(IF, op2, op1)))
 		}
 		return operandMap(x, Simplify)
 	}

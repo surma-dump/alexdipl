@@ -1,10 +1,15 @@
 package logic
 
+import (
+	"fmt"
+)
+
 const (
 	NOT = "!"
 	AND = "^"
 	OR  = "v"
 	IFF = "<=>"
+	IF = "=>"
 )
 
 var (
@@ -13,6 +18,7 @@ var (
 		AND: and,
 		OR:  or,
 		IFF: iff,
+		IF: _if,
 	}
 )
 
@@ -64,7 +70,12 @@ func (o *Operation) String() string {
 	r := o.Operator + "("
 	ops := ""
 	for _, operand := range o.Operands {
-		r += ops + operand.String()
+		r += ops
+		if operand == nil {
+			r += "<nil>"
+		} else {
+			r += operand.String()
+		}
 		ops = ", "
 	}
 	return r + ")"
@@ -119,6 +130,18 @@ func and(operands []Node, config Configuration) bool {
 	return true
 }
 
+func _if(operands []Node, config Configuration) bool {
+	if len(operands) == 0 {
+		panic("Zero arguments for `if`")
+	}
+	r := true
+	for _, operand := range operands {
+		op := operand.Eval(config)
+		r = !r || op
+	}
+	return r
+}
+
 func iff(operands []Node, config Configuration) bool {
 	if len(operands) == 0 {
 		panic("Zero arguments for `iff`")
@@ -129,4 +152,42 @@ func iff(operands []Node, config Configuration) bool {
 		r = r == op
 	}
 	return r
+}
+
+var (
+	idxmap map[string]int
+)
+func FormatSAT(n Node) string {
+	idxmap = make(map[string]int)
+	n = CNF(n)
+	return formatSAT(n)
+}
+
+func formatSAT(n Node) string {
+	s := ""
+	if _, ok := n.(Leaf); ok {
+		name := n.String()
+		if _, ok := idxmap[name]; !ok {
+			idxmap[name] = len(idxmap)+1
+		}
+		return fmt.Sprintf("%d", idxmap[name])
+	}
+	x := n.(*Operation)
+	switch x.Operator {
+	case AND:
+		for _, op := range x.Operands {
+			s += formatSAT(op) + " 0 \n"
+		}
+	case OR:
+		sep := ""
+		for _, op := range x.Operands {
+			s += sep + formatSAT(op)
+			sep = " "
+		}
+	case NOT:
+		s = "-" + formatSAT(x.Operands[0])
+	default:
+		panic("This is not possibe o_O")
+	}
+	return s
 }
