@@ -70,19 +70,19 @@ func TestIff(t *testing.T) {
 func TestSimplify(t *testing.T) {
 	l := NewOperation(NOT, NewLeaf("a"))
 	r := Simplify(l)
-	if r.String() != "¬(a)" {
+	if r.String() != "!(a)" {
 		t.Fatalf("Simplify(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(IFF, NewOperation(NOT, NewLeaf("a")), NewOperation(OR, NewLeaf("a"), NewLeaf("b")))
 	r = Simplify(l)
-	if r.String() != "⋀(⋁(¬(¬(a)), ⋁(a, b)), ⋁(¬(⋁(a, b)), ¬(a)))" {
+	if r.String() != "^(v(!(!(a)), v(a, b)), v(!(v(a, b)), !(a)))" {
 		t.Fatalf("Simplify(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(NOT, NewOperation(AND, NewOperation(OR, NewLeaf("a"), NewLeaf("b")), NewOperation(OR, NewLeaf("c"), NewLeaf("d"))))
 	r = Simplify(l)
-	if r.String() != "¬(⋀(⋁(a, b), ⋁(c, d)))" {
+	if r.String() != "!(^(v(a, b), v(c, d)))" {
 		t.Fatalf("Simplify(%s) returned %s", l, r)
 	}
 
@@ -94,13 +94,13 @@ func TestDeMorgan(t *testing.T) {
 
 	l = NewOperation(AND, NewLeaf("a"), NewLeaf("b"))
 	r = DeMorgan(l)
-	if r.String() != "⋀(a, b)" {
+	if r.String() != "^(a, b)" {
 		t.Fatalf("DeMorgan(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(NOT, NewLeaf("a"))
 	r = DeMorgan(l)
-	if r.String() != "¬(a)" {
+	if r.String() != "!(a)" {
 		t.Fatalf("DeMorgan(%s) returned %s", l, r)
 	}
 
@@ -112,13 +112,13 @@ func TestDeMorgan(t *testing.T) {
 
 	l = NewOperation(NOT, NewOperation(AND, NewLeaf("a"), NewLeaf("b")))
 	r = DeMorgan(l)
-	if r.String() != "⋁(¬(a), ¬(b))" {
+	if r.String() != "v(!(a), !(b))" {
 		t.Fatalf("DeMorgan(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(NOT, NewOperation(AND, NewOperation(OR, NewLeaf("a"), NewLeaf("b")), NewOperation(OR, NewLeaf("c"), NewLeaf("d"))))
 	r = DeMorgan(l)
-	if r.String() != "⋁(⋀(¬(a), ¬(b)), ⋀(¬(c), ¬(d)))" {
+	if r.String() != "v(^(!(a), !(b)), ^(!(c), !(d)))" {
 		t.Fatalf("Simplify(%s) returned %s", l, r)
 	}
 
@@ -129,43 +129,43 @@ func TestCNF(t *testing.T) {
 
 	l = NewLeaf("a")
 	r = CNF(l)
-	if r.String() != "⋀(⋁(a))" {
+	if r.String() != "^(v(a))" {
 		t.Fatalf("CNF(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(NOT, NewLeaf("a"))
 	r = CNF(l)
-	if r.String() != "⋀(⋁(¬(a)))" {
+	if r.String() != "^(v(!(a)))" {
 		t.Fatalf("CNF(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(AND, NewLeaf("a"), NewLeaf("b"))
 	r = CNF(l)
-	if r.String() != "⋀(⋁(a), ⋁(b))" {
+	if r.String() != "^(v(a), v(b))" {
 		t.Fatalf("CNF(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(OR, NewLeaf("a"), NewLeaf("b"))
 	r = CNF(l)
-	if r.String() != "⋀(⋁(a, b))" {
+	if r.String() != "^(v(a, b))" {
 		t.Fatalf("CNF(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(OR, NewOperation(AND, NewLeaf("a"), NewLeaf("b")), NewOperation(AND, NewLeaf("c"), NewLeaf("d")))
 	r = CNF(l)
-	if r.String() != "⋀(⋁(a, c), ⋁(b, c), ⋁(a, d), ⋁(b, d))" {
+	if r.String() != "^(v(a, c), v(b, c), v(a, d), v(b, d))" {
 		t.Fatalf("CNF(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(AND, NewOperation(NOT, NewOperation(OR, NewLeaf("a"), NewLeaf("b"))), NewOperation(OR, NewLeaf("c"), NewLeaf("d")))
 	r = CNF(l)
-	if r.String() != "⋀(⋁(¬(a)), ⋁(¬(b)), ⋁(c, d))" {
+	if r.String() != "^(v(!(a)), v(!(b)), v(c, d))" {
 		t.Fatalf("CNF(%s) returned %s", l, r)
 	}
 
 	l = NewOperation(NOT, NewOperation(AND, NewOperation(OR, NewLeaf("a"), NewLeaf("b")), NewOperation(OR, NewLeaf("c"), NewLeaf("d"))))
 	r = CNF(l)
-	if r.String() != "⋀(⋁(¬(a), ¬(c)), ⋁(¬(b), ¬(c)), ⋁(¬(a), ¬(d)), ⋁(¬(b), ¬(d)))" {
+	if r.String() != "^(v(!(a), !(c)), v(!(b), !(c)), v(!(a), !(d)), v(!(b), !(d)))" {
 		t.Fatalf("CNF(%s) returned %s", l, r)
 	}
 
