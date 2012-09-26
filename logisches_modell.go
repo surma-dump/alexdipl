@@ -1,7 +1,7 @@
 package main
 
 import (
-	"stoichio/logic"
+	"./logic"
 	"bufio"
 	"flag"
 	"fmt"
@@ -13,7 +13,7 @@ import (
 
 var (
 	input = flag.String("i", "", "Input to read from.")
-	sat = flag.Bool("s", false, "Produce SAT compatible output")
+	sat   = flag.Bool("s", false, "Produce SAT compatible output")
 )
 
 func main() {
@@ -135,16 +135,16 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 		metaboliteins, metaboliteouts := logic.NewOperation(logic.OR), logic.NewOperation(logic.OR)
 		// Traverse metabolites
 		for reactionidx, reaction := range metabol {
-			reactionname := strconv.Itoa(reactionidx+1)
+			reactionname := strconv.Itoa(reactionidx + 1)
 			if !irreversible[reactionidx] {
 				if _, ok := reversiblemap[reactionname+"f"]; !ok {
 					if *sat {
 						idx := len(irreversible) + len(reversiblemap) + 1
 						reversiblemap[reactionname+"f"] = strconv.Itoa(idx)
-						reversiblemap[reactionname+"b"] = strconv.Itoa(idx+1)
+						reversiblemap[reactionname+"b"] = strconv.Itoa(idx + 1)
 					} else {
-						reversiblemap[reactionname+"f"] = reactionname+"f"
-						reversiblemap[reactionname+"b"] = reactionname+"b"
+						reversiblemap[reactionname+"f"] = reactionname + "f"
+						reversiblemap[reactionname+"b"] = reactionname + "b"
 					}
 				}
 				if reaction > 0 {
@@ -170,15 +170,15 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 		if isIrreversible {
 			continue
 		}
-		varname := strconv.Itoa(reactionidx+1)
+		varname := strconv.Itoa(reactionidx + 1)
 		if _, ok := reversiblemap[varname+"f"]; !ok {
 			if *sat {
 				idx := len(irreversible) + len(reversiblemap) + 1
 				reversiblemap[varname+"f"] = strconv.Itoa(idx)
-				reversiblemap[varname+"b"] = strconv.Itoa(idx+1)
+				reversiblemap[varname+"b"] = strconv.Itoa(idx + 1)
 			} else {
-				reversiblemap[varname+"f"] = varname+"f"
-				reversiblemap[varname+"b"] = varname+"b"
+				reversiblemap[varname+"f"] = varname + "f"
+				reversiblemap[varname+"b"] = varname + "b"
 			}
 		}
 		in := logic.NewLeaf(reversiblemap[varname+"f"])
@@ -192,7 +192,6 @@ func generateLogic(stoichio StoichioMatrix, irreversible []bool) logic.Node {
 	return root
 }
 
-
 func formatSAT(n logic.Node) string {
 	s := ""
 	if _, ok := n.(logic.Leaf); ok {
@@ -202,12 +201,12 @@ func formatSAT(n logic.Node) string {
 	switch x.Operator {
 	case logic.AND:
 		for _, op := range x.Operands {
-			s += formatSAT(op)+" 0 \n"
+			s += formatSAT(op) + " 0 \n"
 		}
 	case logic.OR:
 		sep := ""
 		for _, op := range x.Operands {
-			s += sep+formatSAT(op)
+			s += sep + formatSAT(op)
 			sep = " "
 		}
 	case logic.NOT:

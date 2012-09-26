@@ -2,15 +2,16 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"flag"
-	"strings"
+	"fmt"
 	"os"
+	"strings"
 )
 
 var (
 	helpFlag = flag.Bool("help", false, "Show this help")
 )
+
 func main() {
 	flag.Parse()
 
@@ -53,6 +54,7 @@ func filter(sol []Solution) {
 }
 
 type Solution []bool
+
 func parseSolutions(file string) []Solution {
 	f, e := os.Open(file)
 	if e != nil {
