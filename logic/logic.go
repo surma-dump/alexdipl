@@ -158,10 +158,10 @@ var (
 	idxmap map[string]int
 )
 
-func FormatSAT(n Node) string {
+func FormatSAT(n Node) (string, map[string]int) {
 	idxmap = make(map[string]int)
 	n = CNF(n)
-	return formatSAT(n)
+	return formatSAT(n), idxmap
 }
 
 func formatSAT(n Node) string {

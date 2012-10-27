@@ -4,10 +4,13 @@ import (
 	"./logic"
 	"./stoichio"
 	"fmt"
-	"github.com/surma/goptions"
+	"github.com/voxelbrain/goptions"
 	"log"
+	"os"
+	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 )
 
 const METABOL = "m_%d_t=%d"
@@ -20,6 +23,7 @@ func main() {
 		InputFile     string `goptions:"-i, --input, description='File to read', obligatory"`
 		TimeLimit     int    `goptions:"-t, --time, description='Maximum number of timesteps (default: 10)'"`
 		Targetset     string `goptions:"-z, --targetset, description='Comma-separated list of metabolite indices'"`
+		Verbosity     []bool `goptions:"-v, --verbose, description='Increase verbosity'"`
 		SAT           bool   `goptions:"-s, --output-sat, description='Output in SAT format instead of human-readable CNF'"`
 		goptions.Help `goptions:"-h, --help, description='Show this help'"`
 	}{
@@ -62,10 +66,12 @@ func main() {
 			t_out = append(t_out, i)
 		}
 	}
-	log.Printf("t_in: %#v", t_in)
-	log.Printf("t_out: %#v", t_out)
-	log.Printf("sourceset: %#v", sourceset)
-	log.Printf("z: %#v", z)
+	if len(options.Verbosity) >= 2 {
+		log.Printf("t_in: %#v", t_in)
+		log.Printf("t_out: %#v", t_out)
+		log.Printf("sourceset: %#v", sourceset)
+		log.Printf("z: %#v", z)
+	}
 
 	a1 := logic.NewOperation(logic.AND)
 	for i := 0; i < matrix.NumRows(); i++ {
@@ -96,15 +102,27 @@ func main() {
 	}
 
 	if options.SAT {
-		fmt.Println(logic.FormatSAT(a))
+		sat, table := logic.FormatSAT(a)
+		list := sortTable(table)
+		fmt.Println("Table:")
+		tw := tabwriter.NewWriter(os.Stdout, 4, 4, 1, ' ', tabwriter.AlignRight)
+		for _, v := range list {
+			fmt.Fprintf(tw, "\t%d\t=>\t%s\t\n", v.Id, v.Name)
+		}
+		tw.Flush()
+		fmt.Println("")
+		fmt.Println("SAT:")
+		fmt.Println(sat)
 	} else {
-		log.Printf("A1:\n%s", a1)
-		log.Printf("A2:\n%s", a2)
-		log.Printf("A3:\n%s", a3)
-		log.Printf("A4:\n%s", a4)
-		log.Printf("A5:\n%s", a5)
-		log.Printf("A6:\n%s", a6)
-		log.Printf("A:\n%s", a)
+		if len(options.Verbosity) >= 1 {
+			log.Printf("A1:\n%s", a1)
+			log.Printf("A2:\n%s", a2)
+			log.Printf("A3:\n%s", a3)
+			log.Printf("A4:\n%s", a4)
+			log.Printf("A5:\n%s", a5)
+			log.Printf("A6:\n%s", a6)
+			log.Printf("A:\n%s", a)
+		}
 		log.Printf("CNF(A):\n%s", logic.CNF(a))
 	}
 
@@ -185,4 +203,35 @@ func contains(a []int, i int) bool {
 		}
 	}
 	return false
+}
+
+type ListEntry struct {
+	Name string
+	Id   int
+}
+
+type List []ListEntry
+
+func (t List) Len() int {
+	return len(t)
+}
+
+func (t List) Less(i, j int) bool {
+	return t[i].Id < t[j].Id
+}
+
+func (t List) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+
+func sortTable(hashtable map[string]int) List {
+	list := make(List, 0, len(hashtable))
+	for k, v := range hashtable {
+		list = append(list, ListEntry{
+			Name: k,
+			Id:   v,
+		})
+	}
+	sort.Sort(list)
+	return list
 }
