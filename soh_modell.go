@@ -87,18 +87,23 @@ func main() {
 	a4 := logic.NewOperation(logic.AND)
 	a5 := logic.NewOperation(logic.AND)
 	a6 := logic.NewOperation(logic.AND)
-	a4.PushOperands(generateA4(0, matrix))
+	a7 := logic.NewOperation(logic.AND)
 	a5.PushOperands(generateA5(0, matrix))
-	for t := 1; t <= options.TimeLimit; t++ {
+	a6.PushOperands(generateA6(0, matrix))
+	for t := 1; t < options.TimeLimit; t++ {
 		a2.PushOperands(generateA2(t, matrix, irreversible))
 		a3.PushOperands(generateA3(t, matrix, irreversible))
-		a4.PushOperands(generateA4(t, matrix))
+		a4.PushOperands(generateA4(t, matrix, irreversible, sourceset))
 		a5.PushOperands(generateA5(t, matrix))
+		a6.PushOperands(generateA6(t, matrix))
 	}
-	a6.PushOperands(generateA6(options.TimeLimit, z)...)
-	a := logic.NewOperation(logic.AND, a1, a2, a3, a4, a5)
+	a2.PushOperands(generateA2(options.TimeLimit, matrix, irreversible))
+	a3.PushOperands(generateA3(options.TimeLimit, matrix, irreversible))
+	a4.PushOperands(generateA4(options.TimeLimit, matrix, irreversible, sourceset))
+	a7.PushOperands(generateA7(options.TimeLimit, z)...)
+	a := logic.NewOperation(logic.AND, a1, a2, a3, a4, a5, a6)
 	if len(z) > 0 {
-		a.PushOperands(a6)
+		a.PushOperands(a7)
 	}
 
 	if options.SAT {
@@ -121,6 +126,7 @@ func main() {
 			log.Printf("A4:\n%s", a4)
 			log.Printf("A5:\n%s", a5)
 			log.Printf("A6:\n%s", a6)
+			log.Printf("A7:\n%s", a7)
 			log.Printf("A:\n%s", a)
 		}
 		log.Printf("CNF(A):\n%s", logic.CNF(a))
@@ -164,7 +170,28 @@ func generateA3(t int, matrix stoichio.Matrix, irreversible []bool) logic.Node {
 	return m
 }
 
-func generateA4(t int, matrix stoichio.Matrix) logic.Node {
+func generateA4(t int, matrix stoichio.Matrix, irreversible []bool, sourceset []int) logic.Node {
+	m := logic.NewOperation(logic.AND)
+	for i := 0; i < matrix.NumRows(); i++ {
+		if contains(sourceset, i) {
+			continue
+		}
+		x := logic.NewOperation(logic.OR)
+		x.PushOperands(logic.NewLeaf(fmt.Sprintf(METABOL, i, t-1)))
+
+		for j := 0; j < matrix.NumCols(); j++ {
+			if matrix[i][j] > 0 || (matrix[i][j] < 0 && !irreversible[j]) {
+				x.PushOperands(logic.NewLeaf(fmt.Sprintf(REACTION, j, t)))
+			}
+		}
+		m.PushOperands(logic.NewOperation(logic.IF,
+			logic.NewLeaf(fmt.Sprintf(METABOL, i, t)),
+			x))
+	}
+	return m
+}
+
+func generateA5(t int, matrix stoichio.Matrix) logic.Node {
 	m := logic.NewOperation(logic.AND)
 	for i := 0; i < matrix.NumRows(); i++ {
 		m.PushOperands(logic.NewOperation(logic.IF,
@@ -174,7 +201,7 @@ func generateA4(t int, matrix stoichio.Matrix) logic.Node {
 	return m
 }
 
-func generateA5(t int, matrix stoichio.Matrix) logic.Node {
+func generateA6(t int, matrix stoichio.Matrix) logic.Node {
 	m := logic.NewOperation(logic.AND)
 	for j := 0; j < matrix.NumCols(); j++ {
 		m.PushOperands(logic.NewOperation(logic.IF,
@@ -184,7 +211,7 @@ func generateA5(t int, matrix stoichio.Matrix) logic.Node {
 	return m
 }
 
-func generateA6(t int, targetset []string) []logic.Node {
+func generateA7(t int, targetset []string) []logic.Node {
 	m := make([]logic.Node, 0)
 	for _, idx := range targetset {
 		i, e := strconv.ParseInt(idx, 10, 64)

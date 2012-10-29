@@ -161,7 +161,8 @@ var (
 func FormatSAT(n Node) (string, map[string]int) {
 	idxmap = make(map[string]int)
 	n = CNF(n)
-	return formatSAT(n), idxmap
+	sat := formatSAT(n)
+	return fmt.Sprintf("p cnf %d %d\n%s", len(idxmap), len(n.(*Operation).Operands), sat), idxmap
 }
 
 func formatSAT(n Node) string {
