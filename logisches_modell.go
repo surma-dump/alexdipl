@@ -62,10 +62,16 @@ func ReadInputStrings() (string, string) {
 		defer f.Close()
 		r = bufio.NewReader(f)
 	}
-	matrixstring, prefix, e := r.ReadLine()
-	if e != nil || prefix {
-		panic("Could not read matrix line")
+	var matrixstring, suffix []byte
+	var err error
+	for isPrefix := true; isPrefix; {
+		suffix, isPrefix, err = r.ReadLine()
+		if err != nil {
+			panic("Could not read matrix line")
+		}
+		matrixstring = append(matrixstring, suffix...)
 	}
+
 	irreversiblestring, prefix, e := r.ReadLine()
 	if e != nil || prefix {
 		panic("Could not read reaction line")
